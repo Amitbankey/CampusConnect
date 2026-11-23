@@ -1,3 +1,5 @@
+import bookingRoutes from './routes/booking.routes.js';
+import rideRoutes from './routes/ride.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import { requireApprovedDriver } from './middleware/driver.middleware.js';
 import { authenticateToken } from './middleware/auth.middleware.js';
@@ -15,6 +17,8 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/rides', rideRoutes);
+app.use('/api/bookings', bookingRoutes);
 
 // Welcome API
 app.get('/', (req, res) => {

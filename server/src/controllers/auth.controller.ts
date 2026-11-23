@@ -29,7 +29,7 @@ const driverSchema = z.object({
   password: z.string().min(8, 'Password must contain at least 8 characters'),
   licenseNumber: z.string().min(5, 'Valid licence number is required'),
   vehicleNumber: z.string().min(5, 'Valid vehicle number is required'),
-  vehicleType: z.enum(['BIKE', 'AUTO', 'CAR']),
+  vehicleType: z.enum([ 'AUTO', 'CAB']),
   capacity: z.number().int().min(1).max(7)
 });
 

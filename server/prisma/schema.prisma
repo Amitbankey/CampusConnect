@@ -15,9 +15,8 @@ enum UserRole {
 }
 
 enum VehicleType {
-  BIKE
   AUTO
-  CAR
+  CAB
 }
 
 enum RideStatus {

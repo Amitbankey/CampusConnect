@@ -14,6 +14,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
+const vehicleOptions = [
+  { label: 'Auto Rickshaw', value: 'AUTO' },
+  { label: 'Cab (Sedan / Hatchback / SUV)', value: 'CAB' },
+] as const;
+
 export default function DriverRegister() {
   const router = useRouter();
 
@@ -22,7 +27,7 @@ export default function DriverRegister() {
   const [phone, setPhone] = useState('');
   const [license, setLicense] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
-  const [vehicleType, setVehicleType] = useState('Bike');
+  const [vehicleType, setVehicleType] = useState<'AUTO' | 'CAB'>('AUTO');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -159,22 +164,24 @@ export default function DriverRegister() {
             <Text style={styles.label}>Vehicle Type</Text>
 
             <View style={styles.vehicleContainer}>
-              {['Bike', 'Auto', 'Car'].map((item) => (
+              {vehicleOptions.map((item) => (
                 <TouchableOpacity
-                  key={item}
+                  key={item.value}
                   style={[
                     styles.vehicleButton,
-                    vehicleType === item && styles.selectedVehicle,
+                    vehicleType === item.value && styles.selectedVehicle,
                   ]}
-                  onPress={() => setVehicleType(item)}
+                  onPress={() => setVehicleType(item.value)}
+                  activeOpacity={0.8}
                 >
                   <Text
                     style={[
                       styles.vehicleText,
-                      vehicleType === item && styles.selectedVehicleText,
+                      vehicleType === item.value &&
+                        styles.selectedVehicleText,
                     ]}
                   >
-                    {item}
+                    {item.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -294,10 +301,10 @@ const styles = StyleSheet.create({
     color: '#102B50',
     fontSize: 14,
   },
-  vehicleContainer: { flexDirection: 'row', gap: 10 },
+  vehicleContainer: { gap: 10 },
   vehicleButton: {
-    flex: 1,
     paddingVertical: 13,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 10,
@@ -307,7 +314,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#E7F2FF',
     borderColor: '#1769AA',
   },
-  vehicleText: { color: '#64748B', fontWeight: '600' },
+  vehicleText: {
+    color: '#64748B',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   selectedVehicleText: { color: '#1769AA' },
   passwordContainer: {
     height: 50,
