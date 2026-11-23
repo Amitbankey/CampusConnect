@@ -12,8 +12,11 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   const [role, setRole] = useState<'Student' | 'Driver'>('Student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +24,10 @@ export default function HomeScreen() {
 
   const handleLogin = () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Missing details', 'Please enter your email and password.');
+      Alert.alert(
+        'Missing Details',
+        'Please enter your email and password.'
+      );
       return;
     }
 
@@ -29,6 +35,14 @@ export default function HomeScreen() {
       'CampusConnect',
       'Login screen is working! Authentication will be connected to our backend next.'
     );
+  };
+
+  const handleRegister = () => {
+    if (role === 'Student') {
+      router.push('/student-register');
+    } else {
+      router.push('/driver-register');
+    }
   };
 
   return (
@@ -48,6 +62,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={styles.brand}>CampusConnect</Text>
+
             <Text style={styles.tagline}>
               Your Campus. Your Community.
             </Text>
@@ -55,6 +70,7 @@ export default function HomeScreen() {
 
           <View style={styles.card}>
             <Text style={styles.heading}>Welcome back!</Text>
+
             <Text style={styles.subtitle}>
               Sign in to continue your journey.
             </Text>
@@ -70,6 +86,7 @@ export default function HomeScreen() {
                     role === item && styles.selectedRole,
                   ]}
                   onPress={() => setRole(item)}
+                  activeOpacity={0.8}
                 >
                   <Text
                     style={[
@@ -84,7 +101,9 @@ export default function HomeScreen() {
             </View>
 
             <Text style={styles.label}>
-              {role === 'Student' ? 'College Email / Student ID' : 'Email / Driver ID'}
+              {role === 'Student'
+                ? 'College Email / Student ID'
+                : 'Email / Driver ID'}
             </Text>
 
             <TextInput
@@ -118,8 +137,18 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotButton}>
-              <Text style={styles.forgotText}>Forgot password?</Text>
+            <TouchableOpacity
+              style={styles.forgotButton}
+              onPress={() =>
+                Alert.alert(
+                  'Forgot Password',
+                  'Password recovery will be added with backend authentication.'
+                )
+              }
+            >
+              <Text style={styles.forgotText}>
+                Forgot password?
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -134,14 +163,8 @@ export default function HomeScreen() {
               <Text style={styles.registerText}>
                 Don't have an account?{' '}
               </Text>
-              <TouchableOpacity
-                onPress={() =>
-                  Alert.alert(
-                    'Registration',
-                    'Student and driver registration will be added next.'
-                  )
-                }
-              >
+
+              <TouchableOpacity onPress={handleRegister}>
                 <Text style={styles.registerLink}>Register</Text>
               </TouchableOpacity>
             </View>
@@ -160,20 +183,24 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+
   safeArea: {
     flex: 1,
     backgroundColor: '#F3F7FC',
   },
+
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 22,
     paddingVertical: 28,
   },
+
   header: {
     alignItems: 'center',
     marginBottom: 30,
   },
+
   logo: {
     width: 68,
     height: 68,
@@ -183,21 +210,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
+
   logoIcon: {
     color: '#FFFFFF',
     fontSize: 25,
     fontWeight: 'bold',
   },
+
   brand: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#102B50',
   },
+
   tagline: {
     fontSize: 14,
     color: '#64748B',
     marginTop: 6,
   },
+
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 22,
@@ -208,17 +239,20 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
   },
+
   heading: {
     fontSize: 25,
     fontWeight: 'bold',
     color: '#102B50',
   },
+
   subtitle: {
     color: '#64748B',
     fontSize: 14,
     marginTop: 7,
     marginBottom: 25,
   },
+
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -226,10 +260,12 @@ const styles = StyleSheet.create({
     marginBottom: 9,
     marginTop: 13,
   },
+
   roleContainer: {
     flexDirection: 'row',
     gap: 12,
   },
+
   roleButton: {
     flex: 1,
     paddingVertical: 13,
@@ -238,17 +274,21 @@ const styles = StyleSheet.create({
     borderColor: '#CBD5E1',
     alignItems: 'center',
   },
+
   selectedRole: {
     backgroundColor: '#E7F2FF',
     borderColor: '#1769AA',
   },
+
   roleText: {
     color: '#64748B',
     fontWeight: '600',
   },
+
   selectedRoleText: {
     color: '#1769AA',
   },
+
   input: {
     height: 51,
     borderWidth: 1,
@@ -258,6 +298,7 @@ const styles = StyleSheet.create({
     color: '#102B50',
     fontSize: 14,
   },
+
   passwordContainer: {
     height: 51,
     borderWidth: 1,
@@ -267,24 +308,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
   },
+
   passwordInput: {
     flex: 1,
     color: '#102B50',
     fontSize: 14,
   },
+
   showText: {
     color: '#1769AA',
     fontWeight: '600',
   },
+
   forgotButton: {
     alignSelf: 'flex-end',
     marginTop: 13,
   },
+
   forgotText: {
     color: '#1769AA',
     fontSize: 13,
     fontWeight: '600',
   },
+
   loginButton: {
     backgroundColor: '#1769AA',
     borderRadius: 12,
@@ -293,26 +339,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 25,
   },
+
   loginText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
+
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 23,
     flexWrap: 'wrap',
   },
+
   registerText: {
     color: '#64748B',
     fontSize: 13,
   },
+
   registerLink: {
     color: '#1769AA',
     fontWeight: 'bold',
     fontSize: 13,
   },
+
   footer: {
     textAlign: 'center',
     color: '#94A3B8',
