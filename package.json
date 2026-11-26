@@ -6,6 +6,7 @@
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",
-    "prisma": "^8.0.0-rc.35"
+    "prisma": "^8.0.0-rc.35",
+    "typescript": "^7.0.2"
   }
 }

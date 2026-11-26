@@ -10,9 +10,11 @@ import {
   Platform,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { loginUser } from '../services/auth';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -21,8 +23,9 @@ export default function HomeScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert(
         'Missing Details',
@@ -31,10 +34,32 @@ export default function HomeScreen() {
       return;
     }
 
-    Alert.alert(
-      'CampusConnect',
-      'Login screen is working! Authentication will be connected to our backend next.'
-    );
+    setLoading(true);
+
+    try {
+      const selectedRole = role === 'Student' ? 'STUDENT' : 'DRIVER';
+
+      const user = await loginUser(
+        email.trim(),
+        password,
+        selectedRole
+      );
+
+      if (user.role === 'STUDENT') {
+        router.replace('/student-dashboard');
+      } else {
+        router.replace('/driver-dashboard');
+      }
+    } catch (error) {
+      Alert.alert(
+        'Login Failed',
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = () => {
@@ -87,6 +112,7 @@ export default function HomeScreen() {
                   ]}
                   onPress={() => setRole(item)}
                   activeOpacity={0.8}
+                  disabled={loading}
                 >
                   <Text
                     style={[
@@ -100,20 +126,18 @@ export default function HomeScreen() {
               ))}
             </View>
 
-            <Text style={styles.label}>
-              {role === 'Student'
-                ? 'College Email / Student ID'
-                : 'Email / Driver ID'}
-            </Text>
+            <Text style={styles.label}>Email Address</Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Enter your email or ID"
+              placeholder="Enter your registered email"
               placeholderTextColor="#94A3B8"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
+              autoCorrect={false}
               keyboardType="email-address"
+              editable={!loading}
             />
 
             <Text style={styles.label}>Password</Text>
@@ -126,10 +150,12 @@ export default function HomeScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
+                editable={!loading}
               />
 
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
+                disabled={loading}
               >
                 <Text style={styles.showText}>
                   {showPassword ? 'Hide' : 'Show'}
@@ -142,9 +168,10 @@ export default function HomeScreen() {
               onPress={() =>
                 Alert.alert(
                   'Forgot Password',
-                  'Password recovery will be added with backend authentication.'
+                  'Password recovery will be added later.'
                 )
               }
+              disabled={loading}
             >
               <Text style={styles.forgotText}>
                 Forgot password?
@@ -152,11 +179,19 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.loginButton}
+              style={[
+                styles.loginButton,
+                loading && styles.disabledButton,
+              ]}
               onPress={handleLogin}
               activeOpacity={0.8}
+              disabled={loading}
             >
-              <Text style={styles.loginText}>Login</Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={styles.loginText}>Login</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.registerContainer}>
@@ -164,7 +199,10 @@ export default function HomeScreen() {
                 Don't have an account?{' '}
               </Text>
 
-              <TouchableOpacity onPress={handleRegister}>
+              <TouchableOpacity
+                onPress={handleRegister}
+                disabled={loading}
+              >
                 <Text style={styles.registerLink}>Register</Text>
               </TouchableOpacity>
             </View>
@@ -338,6 +376,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 25,
+  },
+
+  disabledButton: {
+    opacity: 0.7,
   },
 
   loginText: {

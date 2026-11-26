@@ -18,10 +18,13 @@ export default function RootLayout() {
       <AnimatedSplashOverlay />
 
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="student-register" />
-        <Stack.Screen name="driver-register" />
-        <Stack.Screen name="explore" />
+       <Stack.Screen name="find-ride" />
+       <Stack.Screen name="index" />
+       <Stack.Screen name="student-register" />
+       <Stack.Screen name="driver-register" />
+       <Stack.Screen name="student-dashboard" />
+       <Stack.Screen name="driver-dashboard" />
+       <Stack.Screen name="explore" />
       </Stack>
     </ThemeProvider>
   );
