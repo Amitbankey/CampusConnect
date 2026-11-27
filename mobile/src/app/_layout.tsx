@@ -18,13 +18,22 @@ export default function RootLayout() {
       <AnimatedSplashOverlay />
 
       <Stack screenOptions={{ headerShown: false }}>
-       <Stack.Screen name="find-ride" />
-       <Stack.Screen name="index" />
-       <Stack.Screen name="student-register" />
-       <Stack.Screen name="driver-register" />
-       <Stack.Screen name="student-dashboard" />
-       <Stack.Screen name="driver-dashboard" />
-       <Stack.Screen name="explore" />
+        <Stack.Screen name="index" />
+        <Stack.Screen name="student-register" />
+        <Stack.Screen name="driver-register" />
+        <Stack.Screen name="student-dashboard" />
+        <Stack.Screen name="driver-dashboard" />
+
+        {/* Student screens */}
+        <Stack.Screen name="find-ride" />
+        <Stack.Screen name="my-bookings" />
+
+        {/* Driver screens */}
+        <Stack.Screen name="create-ride" />
+        <Stack.Screen name="ride-requests" />
+        <Stack.Screen name="my-rides" />
+
+        <Stack.Screen name="explore" />
       </Stack>
     </ThemeProvider>
   );

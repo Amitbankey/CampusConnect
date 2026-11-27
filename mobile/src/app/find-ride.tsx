@@ -13,12 +13,27 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ride, searchRides } from '../services/ride';
+import { createBooking } from '../services/booking';
+
+// Suggested locations
+const LOCATION_SUGGESTIONS = [
+  'VIT Bhopal',
+  'Sehore',
+  'Ashta',
+  'Bhopal',
+];
 
 export default function FindRideScreen() {
   const router = useRouter();
 
   const [pickup, setPickup] = useState('');
   const [destination, setDestination] = useState('');
+
+  const [showPickupSuggestions, setShowPickupSuggestions] =
+    useState(false);
+  const [showDestinationSuggestions, setShowDestinationSuggestions] =
+    useState(false);
+
   const [vehicleType, setVehicleType] = useState<
     'AUTO' | 'CAB' | undefined
   >(undefined);
@@ -27,6 +42,22 @@ export default function FindRideScreen() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
+  const [selectedSeats, setSelectedSeats] = useState<
+    Record<string, number>
+  >({});
+
+  const [bookingRideId, setBookingRideId] = useState<string | null>(
+    null
+  );
+
+  // Filter location suggestions based on typed text
+  const getSuggestions = (value: string) => {
+    return LOCATION_SUGGESTIONS.filter((location) =>
+      location.toLowerCase().includes(value.trim().toLowerCase())
+    );
+  };
+
+  // Search available rides
   const handleSearch = async () => {
     if (!pickup.trim() || !destination.trim()) {
       Alert.alert(
@@ -36,17 +67,35 @@ export default function FindRideScreen() {
       return;
     }
 
+    setShowPickupSuggestions(false);
+    setShowDestinationSuggestions(false);
+
     setLoading(true);
     setSearched(true);
 
     try {
       const result = await searchRides({
-        pickup,
-        destination,
+        pickup: pickup.trim(),
+        destination: destination.trim(),
         vehicleType,
       });
 
       setRides(result);
+
+      setSelectedSeats((previous) => {
+        const updated = { ...previous };
+
+        result.forEach((ride) => {
+          const maxSeats = Math.min(7, ride.availableSeats);
+
+          updated[ride.id] = Math.min(
+            Math.max(updated[ride.id] || 1, 1),
+            maxSeats
+          );
+        });
+
+        return updated;
+      });
     } catch (error) {
       Alert.alert(
         'Search Failed',
@@ -54,10 +103,84 @@ export default function FindRideScreen() {
           ? error.message
           : 'Unable to search rides.'
       );
+
       setRides([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Change selected seats
+  const changeSeats = (ride: Ride, change: number) => {
+    const maxSeats = Math.min(7, ride.availableSeats);
+
+    setSelectedSeats((previous) => {
+      const currentSeats = previous[ride.id] || 1;
+
+      const newSeats = Math.min(
+        Math.max(currentSeats + change, 1),
+        maxSeats
+      );
+
+      return {
+        ...previous,
+        [ride.id]: newSeats,
+      };
+    });
+  };
+
+  // Submit booking after confirmation
+  const confirmBooking = async (ride: Ride) => {
+    const seats = selectedSeats[ride.id] || 1;
+
+    setBookingRideId(ride.id);
+
+    try {
+      const booking = await createBooking(ride.id, seats);
+
+      Alert.alert(
+        'Booking Submitted!',
+        `Your booking has been submitted successfully.\n\nSeats booked: ${booking.seatsBooked}\nTotal fare: ₹${ride.fare * seats}\nStatus: PENDING\n\nYour seats are reserved while waiting for driver approval.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              handleSearch();
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        'Booking Failed',
+        error instanceof Error
+          ? error.message
+          : 'Unable to book this ride.'
+      );
+    } finally {
+      setBookingRideId(null);
+    }
+  };
+
+  // Show booking confirmation
+  const handleBooking = (ride: Ride) => {
+    const seats = selectedSeats[ride.id] || 1;
+    const totalFare = ride.fare * seats;
+
+    Alert.alert(
+      'Confirm Booking',
+      `Pickup: ${ride.pickup}\nDestination: ${ride.destination}\nSeats: ${seats}\nTotal Fare: ₹${totalFare}\n\nDo you want to confirm this booking?`,
+      [
+        {
+          text: 'Go Back',
+          style: 'cancel',
+        },
+        {
+          text: 'Confirm Booking',
+          onPress: () => confirmBooking(ride),
+        },
+      ]
+    );
   };
 
   const formatDate = (date: string) => {
@@ -90,7 +213,9 @@ export default function FindRideScreen() {
           Find available rides from your campus community.
         </Text>
 
+        {/* Search Form */}
         <View style={styles.searchCard}>
+          {/* Pickup Location */}
           <Text style={styles.label}>Pickup Location</Text>
 
           <TextInput
@@ -98,9 +223,42 @@ export default function FindRideScreen() {
             placeholder="Enter pickup location"
             placeholderTextColor="#94A3B8"
             value={pickup}
-            onChangeText={setPickup}
+            onFocus={() => {
+              setShowPickupSuggestions(true);
+              setShowDestinationSuggestions(false);
+            }}
+            onChangeText={(text) => {
+              setPickup(text);
+              setShowPickupSuggestions(true);
+            }}
           />
 
+          {showPickupSuggestions && (
+            <View style={styles.suggestionList}>
+              {getSuggestions(pickup).length > 0 ? (
+                getSuggestions(pickup).map((location) => (
+                  <TouchableOpacity
+                    key={location}
+                    style={styles.suggestionItem}
+                    onPress={() => {
+                      setPickup(location);
+                      setShowPickupSuggestions(false);
+                    }}
+                  >
+                    <Text style={styles.suggestionText}>
+                      {location}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noSuggestionText}>
+                  No matching suggestions. You can enter your own location.
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Destination */}
           <Text style={styles.label}>Destination</Text>
 
           <TextInput
@@ -108,9 +266,42 @@ export default function FindRideScreen() {
             placeholder="Enter destination"
             placeholderTextColor="#94A3B8"
             value={destination}
-            onChangeText={setDestination}
+            onFocus={() => {
+              setShowDestinationSuggestions(true);
+              setShowPickupSuggestions(false);
+            }}
+            onChangeText={(text) => {
+              setDestination(text);
+              setShowDestinationSuggestions(true);
+            }}
           />
 
+          {showDestinationSuggestions && (
+            <View style={styles.suggestionList}>
+              {getSuggestions(destination).length > 0 ? (
+                getSuggestions(destination).map((location) => (
+                  <TouchableOpacity
+                    key={location}
+                    style={styles.suggestionItem}
+                    onPress={() => {
+                      setDestination(location);
+                      setShowDestinationSuggestions(false);
+                    }}
+                  >
+                    <Text style={styles.suggestionText}>
+                      {location}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.noSuggestionText}>
+                  No matching suggestions. You can enter your own location.
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Vehicle Type */}
           <Text style={styles.label}>Vehicle Type</Text>
 
           <View style={styles.filterContainer}>
@@ -166,8 +357,12 @@ export default function FindRideScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Search Button */}
           <TouchableOpacity
-            style={styles.searchButton}
+            style={[
+              styles.searchButton,
+              loading && styles.disabledButton,
+            ]}
             onPress={handleSearch}
             disabled={loading}
           >
@@ -181,6 +376,7 @@ export default function FindRideScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Search Results */}
         {searched && !loading && (
           <View style={styles.resultsContainer}>
             <Text style={styles.resultsHeading}>
@@ -192,52 +388,127 @@ export default function FindRideScreen() {
                 <Text style={styles.emptyTitle}>
                   No Rides Found
                 </Text>
+
                 <Text style={styles.emptyText}>
                   Try different pickup or destination locations.
                 </Text>
               </View>
             ) : (
-              rides.map((ride) => (
-                <View key={ride.id} style={styles.rideCard}>
-                  <View style={styles.rideHeader}>
-                    <Text style={styles.vehicleType}>
-                      {ride.vehicle.vehicleType}
+              rides.map((ride) => {
+                const seats = selectedSeats[ride.id] || 1;
+                const isBooking = bookingRideId === ride.id;
+                const totalFare = ride.fare * seats;
+
+                return (
+                  <View key={ride.id} style={styles.rideCard}>
+                    <View style={styles.rideHeader}>
+                      <Text style={styles.vehicleType}>
+                        {ride.vehicle.vehicleType}
+                      </Text>
+
+                      <Text style={styles.fare}>
+                        ₹{ride.fare} / seat
+                      </Text>
+                    </View>
+
+                    <Text style={styles.location}>
+                      {ride.pickup}
                     </Text>
 
-                    <Text style={styles.fare}>
-                      ₹{ride.fare}
+                    <Text style={styles.arrow}>↓</Text>
+
+                    <Text style={styles.location}>
+                      {ride.destination}
                     </Text>
+
+                    <View style={styles.divider} />
+
+                    <Text style={styles.detail}>
+                      Driver: {ride.driver.user.name}
+                    </Text>
+
+                    <Text style={styles.detail}>
+                      Vehicle: {ride.vehicle.vehicleNumber}
+                    </Text>
+
+                    <Text style={styles.detail}>
+                      Departure: {formatDate(ride.departureTime)}
+                    </Text>
+
+                    <Text style={styles.detail}>
+                      Available seats: {ride.availableSeats}
+                    </Text>
+
+                    <View style={styles.divider} />
+
+                    {/* Seat Selection */}
+                    <Text style={styles.seatLabel}>
+                      Select Number of Seats
+                    </Text>
+
+                    <View style={styles.seatContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.seatButton,
+                          seats <= 1 && styles.disabledSeatButton,
+                        ]}
+                        onPress={() => changeSeats(ride, -1)}
+                        disabled={seats <= 1 || isBooking}
+                      >
+                        <Text style={styles.seatButtonText}>−</Text>
+                      </TouchableOpacity>
+
+                      <Text style={styles.seatCount}>
+                        {seats}
+                      </Text>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.seatButton,
+                          seats >= Math.min(7, ride.availableSeats) &&
+                            styles.disabledSeatButton,
+                        ]}
+                        onPress={() => changeSeats(ride, 1)}
+                        disabled={
+                          seats >= Math.min(7, ride.availableSeats) ||
+                          isBooking
+                        }
+                      >
+                        <Text style={styles.seatButtonText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Total Fare */}
+                    <View style={styles.totalFareContainer}>
+                      <Text style={styles.totalFareLabel}>
+                        Total Fare
+                      </Text>
+
+                      <Text style={styles.totalFare}>
+                        ₹{totalFare}
+                      </Text>
+                    </View>
+
+                    {/* Book Ride */}
+                    <TouchableOpacity
+                      style={[
+                        styles.bookButton,
+                        isBooking && styles.disabledButton,
+                      ]}
+                      onPress={() => handleBooking(ride)}
+                      disabled={isBooking || ride.availableSeats < 1}
+                    >
+                      {isBooking ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.bookButtonText}>
+                          Book Ride
+                        </Text>
+                      )}
+                    </TouchableOpacity>
                   </View>
-
-                  <Text style={styles.location}>
-                    {ride.pickup}
-                  </Text>
-
-                  <Text style={styles.arrow}>↓</Text>
-
-                  <Text style={styles.location}>
-                    {ride.destination}
-                  </Text>
-
-                  <View style={styles.divider} />
-
-                  <Text style={styles.detail}>
-                    Driver: {ride.driver.user.name}
-                  </Text>
-
-                  <Text style={styles.detail}>
-                    Vehicle: {ride.vehicle.vehicleNumber}
-                  </Text>
-
-                  <Text style={styles.detail}>
-                    Departure: {formatDate(ride.departureTime)}
-                  </Text>
-
-                  <Text style={styles.detail}>
-                    Available seats: {ride.availableSeats}
-                  </Text>
-                </View>
-              ))
+                );
+              })
             )}
           </View>
         )}
@@ -296,6 +567,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#102B50',
   },
+  suggestionList: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    marginTop: 5,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#102B50',
+  },
+  noSuggestionText: {
+    fontSize: 13,
+    color: '#64748B',
+    padding: 12,
+  },
   filterContainer: {
     flexDirection: 'row',
     gap: 10,
@@ -331,6 +626,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   resultsContainer: {
     marginTop: 25,
@@ -399,5 +697,69 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748B',
     marginTop: 7,
+  },
+  seatLabel: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  seatContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 25,
+  },
+  seatButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#E7F2FF',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#1769AA',
+  },
+  disabledSeatButton: {
+    opacity: 0.35,
+  },
+  seatButtonText: {
+    fontSize: 24,
+    color: '#1769AA',
+    fontWeight: 'bold',
+  },
+  seatCount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#102B50',
+  },
+  totalFareContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 15,
+  },
+  totalFareLabel: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  totalFare: {
+    fontSize: 21,
+    color: '#15803D',
+    fontWeight: 'bold',
+  },
+  bookButton: {
+    height: 48,
+    backgroundColor: '#1769AA',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: 'bold',
   },
 });

@@ -27,3 +27,7 @@ Thumbs.db
 # Secrets
 *.pem
 *.key
+
+# Local test utilities and test results
+server/src/scripts/reset-test-*-password.ts
+student*_result.txt

@@ -1,8 +1,8 @@
-
 import { Router } from 'express';
 import {
   createRide,
-  getAvailableRides
+  getAvailableRides,
+  getMyRides,
 } from '../controllers/ride.controller.js';
 
 import { authenticateToken } from '../middleware/auth.middleware.js';
@@ -19,6 +19,13 @@ router.get(
   '/',
   authorizeRoles('STUDENT'),
   getAvailableRides
+);
+
+// Drivers can view their own rides
+router.get(
+  '/my-rides',
+  requireApprovedDriver,
+  getMyRides
 );
 
 // Only approved drivers can create rides

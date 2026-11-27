@@ -223,3 +223,66 @@ export const getAvailableRides = async (req: Request, res: Response) => {
     });
   }
 };
+// ==========================================
+// GET RIDES CREATED BY LOGGED-IN DRIVER
+// ==========================================
+
+export const getMyRides = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required.',
+      });
+    }
+
+    const driver = await prisma.driver.findUnique({
+      where: {
+        userId: req.user.userId,
+      },
+    });
+
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver profile not found.',
+      });
+    }
+
+    const rides = await prisma.ride.findMany({
+      where: {
+        driverId: driver.id,
+      },
+      include: {
+        vehicle: true,
+        driver: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        departureTime: 'desc',
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: rides.length,
+      data: rides,
+    });
+  } catch (error) {
+    console.error('Get my rides error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Unable to fetch your rides.',
+    });
+  }
+};

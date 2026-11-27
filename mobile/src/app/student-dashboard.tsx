@@ -45,9 +45,7 @@ export default function StudentDashboard() {
         <TouchableOpacity
           style={styles.actionCard}
           activeOpacity={0.8}
-          onPress={() => {
-            // Booking history navigation will be connected next.
-          }}
+          onPress={() => router.push('/my-bookings')}
         >
           <Text style={styles.actionTitle}>My Bookings</Text>
           <Text style={styles.actionDescription}>
